@@ -73,10 +73,15 @@ router.post('/:problemId', verfiyJWT, async (req, res) => { // <--- USE verfiyJW
 });
 
 
+
+
+
+
 // --- Route 2: Get Submission Details and Poll Judge0 for Status ---
 // GET /api/submissions/:submissionId
 // This route will also require a valid JWT token
 router.get('/:submissionId', verfiyJWT, async (req, res) => { // <--- USE verfiyJWT HERE
+    console.log("hello")
     const { submissionId } = req.params;
     const userId = req.user._id; // <--- ACCESS USER ID FOR AUTHORIZATION
 

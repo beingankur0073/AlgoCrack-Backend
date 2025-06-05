@@ -1,36 +1,34 @@
-import dotenv from 'dotenv'; // Import dotenv
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
-
-// Load environment variables from .env file
+// Load environment variables
 dotenv.config({
-    path: './.env' // Ensure the path to your .env file is correct
+    path: './.env'
 });
 
 const app = express();
 
 // --- Middleware Setup ---
 app.use(cors({
-    origin: process.env.CORS_ORIGIN, // Use the CORS_ORIGIN from your .env
+    origin: process.env.CORS_ORIGIN, // e.g., http://localhost:3000
     credentials: true,
 }));
 
-app.use(express.json({ limit: "16kb" })); // To parse JSON request bodies
-app.use(express.urlencoded({ extended: true, limit: '16kb' })); // To parse URL-encoded request bodies
-app.use(express.static("public")); // To serve static files (e.g., uploaded avatars)
-app.use(cookieParser()); // To parse cookies
+app.use(express.json({ limit: "16kb" }));
+app.use(express.urlencoded({ extended: true, limit: '16kb' }));
+app.use(express.static("public"));
+app.use(cookieParser());
 
 // --- Routes Import ---
-import userRouter from './routes/user.routes.js'; // Your existing user routes
-import router from './routes/submission.routes.js'; // <--- NEW: Import submission routes
+import userRouter from './routes/user.routes.js';
+import submissionRouter from './routes/submission.routes.js';
+import problemRouter from './routes/problem.routes.js'; // ✅ import problem routes
 
 // --- Routes Declaration ---
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/submissions",router); // <--- NEW: Use submission routes
+app.use("/api/v1/submissions", submissionRouter);
+app.use("/api/v1/problems", problemRouter); // ✅ use problem routes
 
-
-
-// Export the app instance (useful for testing or if another file needs to import it)
 export { app };
