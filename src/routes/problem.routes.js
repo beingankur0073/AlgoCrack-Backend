@@ -6,6 +6,7 @@ const router = express.Router();
 
 // GET /api/v1/problems => Get all problems
 router.get('/', getAllProblems);
+
 router.get('/details', getProblemById);
 
 export default router;

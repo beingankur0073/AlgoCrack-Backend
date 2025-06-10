@@ -6,7 +6,9 @@ import {User} from "../models/user.models.js"
 // middleware have next to it as a input
 // as no response is there so _ in place of res
 export const verfiyJWT=asyncHandler(async(req,_,next)=>{
+    
     try {
+
        const token= req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","")
         if(!token){
             throw new ApiError(401,"Unauthorised request")

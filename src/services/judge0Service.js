@@ -5,8 +5,8 @@ dotenv.config(); // Call config method
 
 // Configuration for Judge0 Public API (RapidAPI)
 const JUDGE0_API_URL = process.env.JUDGE0_API_URL;
-const RAPIDAPI_KEY = process.env.RapidAPI_Key;
-const RAPIDAPI_HOST = process.env.RapidAPI_Host;
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
+const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST;
 
 const judge0Api = axios.create({
     baseURL: JUDGE0_API_URL,
@@ -53,11 +53,24 @@ async function submitCode(sourceCode, language, stdin, expectedOutput) {
 }
 
 async function getSubmissionStatus(token) {
+    if (!token) {
+        throw new Error('Submission token is required to get status.');
+    }
+
     try {
-        const response = await judge0Api.get(`/submissions/${token}?base64_encoded=false&fields=status,stdout,stderr,compile_output,time,memory,token`);
+        const response = await judge0Api.get(
+            // --- CHANGE HERE: base64_encoded=true ---
+            `/submissions/${token}?base64_encoded=true&fields=status,stdout,stderr,compile_output,time,memory,token`
+        );
         return response.data;
     } catch (error) {
-        console.error('Error fetching submission status from Judge0:', error.response ? error.response.data : error.message);
+        console.error('Error fetching submission status from Judge0 (Detailed):', {
+            message: error.message,
+            statusCode: error.response ? error.response.status : 'N/A',
+            data: error.response ? error.response.data : 'N/A',
+            configUrl: error.config ? error.config.url : 'N/A',
+            token: token
+        });
         throw new Error('Failed to fetch submission status from Judge0.');
     }
 }

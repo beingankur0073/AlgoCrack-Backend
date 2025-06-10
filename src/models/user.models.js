@@ -29,6 +29,7 @@ const userSchema=new Schema(
             type:String, //cloundnary url
             required:true,
         },
+        
        
         password:{
             type:String,
