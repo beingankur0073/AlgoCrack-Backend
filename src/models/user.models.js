@@ -29,8 +29,9 @@ const userSchema=new Schema(
             type:String, //cloundnary url
             required:true,
         },
-        
-       
+        coverImage:{
+            type:String, //cloundnary url
+        },
         password:{
             type:String,
             required:[true,'Password is required']

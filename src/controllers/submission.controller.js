@@ -225,8 +225,52 @@ const getSubmissionDetails = asyncHandler(async (req, res) => {
 });
 
 
+const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
+    // Get the user ID from the JWT token (for the currently logged-in user)
+    // If you want to view other users' submissions, you'd get userId from req.params.userId
+    const userId = req.user?._id; // Ensure req.user is populated by your JWT middleware
+
+    
+
+    if (!userId) {
+        throw new ApiError(401, "User not authenticated.");
+    }
+
+    // Fetch the latest 10 submissions for the user,
+    // sorted by creation date (descending) and populate problem details
+    const submissions = await Submission.find({ userId: userId })
+        .sort({ submittedAt: -1 }) // Sort by latest first
+        .populate('problemId', 'title difficulty'); // Populate problem details (e.g., title, difficulty)
+
+    if (!submissions || submissions.length === 0) {
+        return res
+            .status(200)
+            .json(new ApiResponse(200, [], "No submissions found for this user yet."));
+    }
+
+    // Format the response to include only relevant details
+    const formattedSubmissions = submissions.map(sub => ({
+        _id: sub._id,
+        problemTitle: sub.problemId ? sub.problemId.title : 'Unknown Problem',
+        problemDifficulty: sub.problemId ? sub.problemId.difficulty : 'N/A',
+        problemId: sub.problemId ? sub.problemId._id : "Unknown ID",
+        status: sub.status,
+        language: sub.language,
+        submittedAt: sub.submittedAt,
+        // You might want to link to full submission details later
+        // submissionToken: sub.judge0Submissions[0]?.token // If you want to deep-link
+    }));
+
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, formattedSubmissions, "Latest user submissions fetched successfully."));
+});
+
+
 
 export {
     createSubmission,
-    getSubmissionDetails
+    getSubmissionDetails,
+    getLatestSubmissionsForUser
 };

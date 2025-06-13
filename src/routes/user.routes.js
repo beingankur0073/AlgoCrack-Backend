@@ -28,8 +28,16 @@ router.route("/register").post(
 
     router.route("/getuser").get(verfiyJWT,getCurrentUser);
     
-    router.route("/updateAvatar").patch(verfiyJWT,updateUserAvatar);
-    router.route("/updateCover").patch(verfiyJWT,updateUserCoverImage);
+    router.route("/updateAvatar").patch(
+    verfiyJWT,
+    upload.single("avatar"), 
+    updateUserAvatar
+);
+    router.route("/updateCover").patch(
+        verfiyJWT,
+        upload.single("coverImage"), 
+        updateUserCoverImage
+    );
 
 
 export default router;
