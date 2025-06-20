@@ -225,30 +225,21 @@ const getSubmissionDetails = asyncHandler(async (req, res) => {
 });
 
 
-const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
-    // Get the user ID from the JWT token (for the currently logged-in user)
-    // If you want to view other users' submissions, you'd get userId from req.params.userId
-    const userId = req.user?._id; // Ensure req.user is populated by your JWT middleware
 
-    
+
+
+const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
 
     if (!userId) {
         throw new ApiError(401, "User not authenticated.");
     }
 
-    // Fetch the latest 10 submissions for the user,
-    // sorted by creation date (descending) and populate problem details
+    // --- Start: Fetch Submissions Logic (Existing) ---
     const submissions = await Submission.find({ userId: userId })
-        .sort({ submittedAt: -1 }) // Sort by latest first
-        .populate('problemId', 'title difficulty'); // Populate problem details (e.g., title, difficulty)
+        .sort({ submittedAt: -1 })
+        .populate('problemId', 'title difficulty');
 
-    if (!submissions || submissions.length === 0) {
-        return res
-            .status(200)
-            .json(new ApiResponse(200, [], "No submissions found for this user yet."));
-    }
-
-    // Format the response to include only relevant details
     const formattedSubmissions = submissions.map(sub => ({
         _id: sub._id,
         problemTitle: sub.problemId ? sub.problemId.title : 'Unknown Problem',
@@ -257,20 +248,92 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
         status: sub.status,
         language: sub.language,
         submittedAt: sub.submittedAt,
-        // You might want to link to full submission details later
-        // submissionToken: sub.judge0Submissions[0]?.token // If you want to deep-link
+        code: sub.code,
     }));
+    // --- End: Fetch Submissions Logic ---
 
+    // --- Start: Fetch Problem Stats Logic (Existing) ---
+    const totalProblems = await Problem.countDocuments();
 
+    const solvedProblemIds = await Submission.distinct('problemId', {
+        userId: userId,
+        status: 'Accepted' // Assuming 'Accepted' is the status for a successful solution
+    });
+    const solvedProblemsCount = solvedProblemIds.length;
+
+    const solvedPercentage = totalProblems > 0 ? (solvedProblemsCount / totalProblems) * 100 : 0;
+
+    const problemStats = {
+        totalProblems,
+        solvedProblems: solvedProblemsCount,
+        solvedPercentage: solvedPercentage.toFixed(2) // Format to 2 decimal places
+    };
+    // --- End: Fetch Problem Stats Logic ---
+
+    // --- Start: Fetch Submission Map (Activity) Logic (NEW) ---
+    const now = new Date();
+    // Default to last 365 days for the activity map
+    const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+
+    const submissionMapActivity = await Submission.aggregate([
+        {
+            $match: {
+                userId: userId,
+                submittedAt: {
+                    $gte: oneYearAgo,
+                    $lte: now // Ensure we're within the last year up to now
+                },
+                status: { $ne: 'Pending' } // Exclude pending submissions from activity count
+            }
+        },
+        {
+            $group: {
+                _id: {
+                    $dateToString: { format: "%Y-%m-%d", date: "$submittedAt" }
+                },
+                count: { $sum: 1 }
+            }
+        },
+        {
+            $sort: { _id: 1 } // Sort by date ascending
+        },
+        {
+            $project: {
+                _id: 0,
+                date: "$_id",
+                count: 1
+            }
+        }
+    ]);
+    // --- End: Fetch Submission Map (Activity) Logic ---
+
+    // Combine all data into a single response object
     return res
         .status(200)
-        .json(new ApiResponse(200, formattedSubmissions, "Latest user submissions fetched successfully."));
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    submissions: formattedSubmissions,
+                    problemStats: problemStats,
+                    submissionMapActivity: submissionMapActivity // <--- NEW: Include submission map data
+                },
+                "User profile data (submissions, problem stats, activity map) fetched successfully."
+            )
+        );
 });
+
+
+
+
+
+
+
 
 
 
 export {
     createSubmission,
     getSubmissionDetails,
-    getLatestSubmissionsForUser
+    getLatestSubmissionsForUser,
 };
