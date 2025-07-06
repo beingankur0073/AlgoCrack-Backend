@@ -403,9 +403,9 @@ const getSubmissionDetails = asyncHandler(async (req, res) => {
 const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
 
-    if (!userId) {
-        throw new ApiError(401, "User not authenticated.");
-    }
+    // if (!userId) {
+    //     throw new ApiError(401, "User not authenticated.");
+    // }
 
     // --- Start: Fetch Submissions Logic (Existing) ---
     const submissions = await Submission.find({ userId: userId })
