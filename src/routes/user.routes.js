@@ -26,15 +26,15 @@ router.route("/register").post(
     router.route("/logout").post(verfiyJWT,logoutUser);
     router.route("/refresh-token").post(refreshAccessToken);
 
-    router.route("/getuser").get(verfiyJWT,getCurrentUser);
+    router.route("/getuser").get(getCurrentUser);
     
     router.route("/updateAvatar").patch(
-    verfiyJWT,
+   
     upload.single("avatar"), 
     updateUserAvatar
 );
     router.route("/updateCover").patch(
-        verfiyJWT,
+        
         upload.single("coverImage"), 
         updateUserCoverImage
     );
