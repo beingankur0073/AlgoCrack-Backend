@@ -1,5 +1,5 @@
 // models/Submission.js
-import mongoose from 'mongoose'; // Changed from const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const judge0SubmissionResultSchema = new mongoose.Schema({
     token: { type: String, required: true },
@@ -14,9 +14,10 @@ const judge0SubmissionResultSchema = new mongoose.Schema({
 
 const testCaseResultSchema = new mongoose.Schema({
     testCaseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Problem.testCases' },
-    input: String,
-    expectedOutput: String,
-    actualOutput: String,
+    // CHANGE THESE TO mongoose.Schema.Types.Mixed
+    input: mongoose.Schema.Types.Mixed,
+    expectedOutput: mongoose.Schema.Types.Mixed,
+    actualOutput: String, // This remains String because Judge0's stdout is a string (after base64 decoding)
     status: { type: String, enum: ['Passed', 'Failed', 'Error'], default: 'Error' },
     message: String
 });
@@ -40,4 +41,4 @@ const submissionSchema = new mongoose.Schema({
     submittedAt: { type: Date, default: Date.now }
 });
 
-export default mongoose.model('Submission', submissionSchema); 
+export default mongoose.model('Submission', submissionSchema);

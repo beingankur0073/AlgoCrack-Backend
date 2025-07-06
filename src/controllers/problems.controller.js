@@ -20,6 +20,9 @@ const getAllProblems = asyncHandler(async (req, res) => {
 
 
 
+
+
+
 const getProblemById = asyncHandler(async (req, res) => {
     // Extract the ProblemId from the query parameters
     const { ProblemId } = req.query; // This is the key change: using req.query

@@ -10,6 +10,7 @@ export const verfiyJWT=asyncHandler(async(req,_,next)=>{
     try {
       
        const token= req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ","")
+       
         if(!token){
             throw new ApiError(401,"Unauthorised request")
         }
@@ -30,3 +31,20 @@ export const verfiyJWT=asyncHandler(async(req,_,next)=>{
     }
 
 })
+
+
+
+
+export const isAdmin = asyncHandler(async (req, res, next) => {
+    // This middleware assumes `verfiyJWT` has already run and populated `req.user`
+    if (!req.user) {
+        throw new ApiError(401, "Unauthorized: User not authenticated.");
+    }
+
+    if (req.user.role !== 'admin') {
+        throw new ApiError(403, "Forbidden: You do not have administrator privileges.");
+    }
+
+    next(); // User is an admin, proceed to the next middleware/controller
+});
+
