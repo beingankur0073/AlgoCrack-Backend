@@ -25,6 +25,7 @@ export const verfiyJWT=asyncHandler(async(req,_,next)=>{
        }
     
        req.user=user;
+       console.log(req.user._id)
        next();
     } catch (error) {
         throw new ApiError(401,error?.message||"Invalid access token");
