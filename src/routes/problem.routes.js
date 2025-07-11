@@ -1,6 +1,7 @@
 // routes/problem.routes.js
 import express from 'express';
-import { getAllProblems, getProblemById } from '../controllers/problems.controller.js';
+import { addProblem, getAllProblems, getProblemById } from '../controllers/problems.controller.js';
+import { isAdmin, verfiyJWT } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
@@ -8,5 +9,6 @@ const router = express.Router();
 router.get('/', getAllProblems);
 
 router.get('/details', getProblemById);
+router.route("/add").post(verfiyJWT, isAdmin, addProblem); 
 
 export default router;

@@ -496,8 +496,88 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
 });
 
 
+const getLeaderboard = asyncHandler(async (req, res) => {
+    try {
+        const leaderboard = await Submission.aggregate([
+            // Stage 1: Group by userId
+            // In this stage, we'll calculate both total submissions and collect unique accepted problem IDs.
+            {
+                $group: {
+                    _id: "$userId", // Group by user ID
+                    totalSubmissions: { $sum: 1 }, // Count all submissions for this user
+                    // Collect unique problem IDs only if the submission status is 'Accepted'
+                    acceptedUniqueProblemIds: {
+                        $addToSet: {
+                            $cond: [
+                                { $eq: ["$status", "Accepted"] }, // If status is 'Accepted'
+                                "$problemId",                     // Add problemId to set
+                                "$$REMOVE"                        // Else, remove (don't add)
+                            ]
+                        }
+                    }
+                }
+            },
+            // Stage 2: Add a new field 'solvedProblems' by counting the size of the acceptedUniqueProblemIds set
+            {
+                $addFields: {
+                    solvedProblems: { $size: "$acceptedUniqueProblemIds" }
+                }
+            },
+            // Stage 3: Sort the leaderboard
+            // Primary sort: by solvedProblems in descending order (more problems solved is better)
+            // Secondary sort: by totalSubmissions in ascending order (fewer submissions for the same solved problems is better)
+            {
+                $sort: {
+                    solvedProblems: -1,
+                    totalSubmissions: 1
+                }
+            },
+            // Stage 4: Lookup user details from the 'users' collection
+            {
+                $lookup: {
+                    from: "users", // MongoDB collection name for User model (check your actual collection name, it's usually 'users')
+                    localField: "_id", // Field from the current pipeline (which is userId)
+                    foreignField: "_id", // Field in the 'users' collection
+                    as: "user" // The output array field containing the matched user document
+                }
+            },
+            // Stage 5: Deconstruct the 'user' array (since _id is unique, it will have one element)
+            {
+                $unwind: "$user"
+            },
+            // Stage 6: Project the desired fields for the final output
+            {
+                $project: {
+                    _id: 0, // Exclude the default _id
+                    userId: "$_id", // Rename _id to userId
+                    username: "$user.username",
+                    avatar: "$user.avatar", // Assuming your User model has an 'avatar' field
+                    solvedProblems: "$solvedProblems",
+                    totalSubmissions: "$totalSubmissions" // <--- Added this field
+                    // Add other user fields if needed, e.g., fullName: "$user.fullName"
+                }
+            }
+        ]);
+
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                {
+                    leaderboard
+                },
+                "Leaderboard fetched successfully"
+            )
+        );
+
+    } catch (error) {
+        console.error("Error fetching leaderboard:", error);
+        throw new ApiError(500, "Failed to fetch leaderboard. Internal server error.");
+    }
+});
+
 export {
     createSubmission,
     getSubmissionDetails,
     getLatestSubmissionsForUser,
+    getLeaderboard,
 };
