@@ -1,7 +1,8 @@
 import Problem from '../models/problem.models.js'; 
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { ApiError } from "../utils/ApiErrors.js"; // Assuming your ApiError utility path
-import { ApiResponse } from "../utils/ApiResponse.js"; // Assuming your ApiResponse utility path
+import { ApiError } from "../utils/ApiErrors.js"; 
+import { ApiResponse } from "../utils/ApiResponse.js";
+import Submission from '../models/submission.models.js'; 
 
 const getAllProblems = asyncHandler(async (req, res) => {
     const problems = await Problem.find().select('_id title difficulty');
@@ -90,4 +91,53 @@ const addProblem = asyncHandler(async (req, res) => {
     }
 });
 
-export { getAllProblems,getProblemById,addProblem }; // Export the function
+
+const deleteProblemById = asyncHandler(async (req, res) => {
+    const { problemId } = req.params;
+
+    if (!problemId) {
+        throw new ApiError(400, "Problem ID is required.");
+    }
+
+    try {
+        // Find the problem first to ensure it exists
+        const problemToDelete = await Problem.findById(problemId);
+
+        if (!problemToDelete) {
+            throw new ApiError(404, "Problem not found.");
+        }
+
+        // --- Optional: Delete associated submissions ---
+        // This is highly recommended to prevent orphaned data.
+        const deleteSubmissionsResult = await Submission.deleteMany({ problemId: problemToDelete._id });
+        console.log(`Deleted ${deleteSubmissionsResult.deletedCount} submissions associated with problem ${problemId}.`);
+        // --- End Optional ---
+
+        // Now, delete the problem itself
+        const deletedProblem = await Problem.findByIdAndDelete(problemId);
+
+        if (!deletedProblem) {
+            // This case should ideally not be hit if problemToDelete was found,
+            // but as a safeguard.
+            throw new ApiError(500, "Failed to delete the problem.");
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, null, "Problem and its associated submissions deleted successfully.")
+        );
+
+    } catch (error) {
+        // Handle Mongoose CastError if problemId is not a valid ObjectId
+        if (error.name === 'CastError') {
+            throw new ApiError(400, "Invalid Problem ID format.");
+        }
+        console.error("Error deleting problem:", error);
+        // Re-throw if it's an ApiError already, otherwise create a generic one
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        throw new ApiError(500, "Internal server error while deleting problem.");
+    }
+});
+
+export { getAllProblems,getProblemById,addProblem,deleteProblemById }; // Export the function
