@@ -11,7 +11,7 @@ import {
 
 const router = express.Router();
 
- router.use(verfiyJWT); 
+router.use(verfiyJWT); 
 
 
 router.get('/user-submissions', getLatestSubmissionsForUser);
