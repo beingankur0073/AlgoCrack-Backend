@@ -81,60 +81,50 @@ const registerUser=asyncHandler(async(req,res)=>{
 })
 
 
-const loginUser=asyncHandler(async(req,res)=>{
-   // req body -> data
-   // username or email
-   // find the user
-   // password check
-   // access and refresh token
-   // send cookie
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, username, password } = req.body;
 
+    if (!username && !email) {
+        throw new ApiError(400, "Username or email is required");
+    }
 
-   const {email,username,password}=req.body;
+    const user = await User.findOne({
+        $or: [{ username }, { email }]
+    });
 
-   if(!username && !email){
-    throw new ApiError(400,"username or email is required")
-   }
+    if (!user) {
+        throw new ApiError(404, "User not exist");
+    }
 
-  const user= await User.findOne({
-    $or:[{username},{email}]
-   })
+    const isPasswordValid = await user.isPasswordCorrect(password);
 
-   if(!user){
-    throw new ApiError(404,"User not exist");
-   }
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid user credentials");
+    }
 
-   const isPasswordValid=await user.isPasswordCorrect(password);
-   
-   if(!isPasswordValid){
-      throw new ApiError(401,"Inavalid user credentials");
-   }
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
-  const {accessToken,refreshToken}=await generateAccessAndRefreshToken(user._id);
-  // console.log(accessToken);
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken"); // Corrected typo here
 
-  const loggedInUser=await User.findById(user._id).select("-password -refreshtoken");
+    const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Use secure:true only in production (HTTPS)
+        sameSite: 'None', // 'None' requires secure:true. Consider 'Lax' if not always cross-site
+    };
 
-  const options={
-    httpOnly:true,
-    secure:true,
-     sameSite: 'None',
-  }
-
-  return res.status(200)
-  .cookie("accessToken",accessToken,options)
-  .cookie("refreshToken",refreshToken,options)
-  .json(
-    new ApiResponse(
-      200,
-      {
-        user:loggedInUser,accessToken,refreshToken,
-      },
-      "User logged in Successfully"
-    )
-  )
-
-})
+    return res.status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    user: loggedInUser, // ONLY send user data in the JSON response
+                },
+                "User logged in Successfully"
+            )
+        );
+});
 
 
 
