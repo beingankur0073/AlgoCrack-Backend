@@ -75,19 +75,27 @@ const formatStdinForJudge0 = (testCaseInput, language) => {
             return `${testCaseInput.n}\n`;
         }
 
-        // Handle array 'nums' when it's directly a JavaScript array
-        // (as per your provided problem data structure: { "nums": [1, 2, 3, 1] })
-        if (Array.isArray(testCaseInput.nums)) {
-            // This is the missing piece for your C++ main function.
-            // Print the size of the array on the first line,
-            // then the space-separated elements on the second line.
-            return `${testCaseInput.nums.length}\n${testCaseInput.nums.join(' ')}\n`;
+        // --- Corrected logic for 'prices' array ---
+        if (Array.isArray(testCaseInput.prices)) {
+            const size = testCaseInput.prices.length;
+            const elements = testCaseInput.prices.join(' ');
+            return `${size}\n${elements}\n`;
         }
 
-        // Add more specific parsing logic here for C++ if your testCaseInput structure
-        // is more complex (e.g., multiple parameters, 2D arrays, etc.)
+        // Handle array 'nums' for other problems if needed
+        if (Array.isArray(testCaseInput.nums)) {
+            const size = testCaseInput.nums.length;
+            const elements = testCaseInput.nums.join(' ');
+            return `${size}\n${elements}\n`;
+        }
+        
+        // Handle a single integer input, like n
+        if (typeof testCaseInput.n === 'number') {
+            return `${testCaseInput.n}\n`;
+        }
 
-        throw new Error(`Unsupported C++ test case input format: ${JSON.stringify(testCaseInput)}. Ensure formatStdinForJudge0 handles all input structures defined in your problems.`);
+        // Add more specific parsing logic here if needed
+        throw new Error(`Unsupported C++ test case input format: ${JSON.stringify(testCaseInput)}.`);
     }
 
     // For other languages (like JS/Python/Java with wrappers),
@@ -95,7 +103,6 @@ const formatStdinForJudge0 = (testCaseInput, language) => {
     return JSON.stringify(testCaseInput);
 };
 
-// ... (rest of your controller code, including formatExpectedOutputForJudge0, createSubmission, getSubmissionDetails) ...
 
 /**
  * Helper function to format expected output for C++ Codeforces-style problems.
