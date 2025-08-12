@@ -137,6 +137,12 @@ text
 
 ---
 
+## 🔗 Postman API Testing Link
+
+> 👉 **[Click here to access the AlgoCrack Backend Postman Collection](https://www.postman.com/spacecraft-geoscientist-20553327/workspace/algocrack/collection/33893722-3b2f6422-cb5e-4c5c-b9f5-8658834c01b1?action=share&creator=33893722)**
+
+---
+
 ## 🔐 Security Considerations
 
 - Passwords hashed with `bcrypt` before storage.
