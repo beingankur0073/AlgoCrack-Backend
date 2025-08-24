@@ -35,6 +35,6 @@ app.use("/api/v1/submissions", submissionRouter);
 app.use("/api/v1/problems", problemRouter); 
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/stats", statsRouter);
-app.use("api/v1/question",questionRouter);
+app.use("/api/v1/question",questionRouter);
 
 export { app };

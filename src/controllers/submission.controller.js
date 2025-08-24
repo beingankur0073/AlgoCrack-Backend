@@ -68,41 +68,55 @@ const JUDGE0_STATUS_DESCRIPTIONS = {
 
 
 const formatStdinForJudge0 = (testCaseInput, language) => {
-    // For C++ (and potentially other languages set to Full Program Submission)
+    // For languages that expect plain string inputs (like C++)
+    // We check for the C++ language here
     if (language.toLowerCase() === 'cpp') {
-        // Handle simple integer 'n' (like for climbStairs)
-        if (typeof testCaseInput.n === 'number') {
-            return `${testCaseInput.n}\n`;
+        if (typeof testCaseInput === 'string' || typeof testCaseInput === 'number') {
+            // If the input is already a string or number, just return it
+            // This is useful for single-value inputs like a number 'n'
+            return String(testCaseInput);
         }
 
-        // --- Corrected logic for 'prices' array ---
-        if (Array.isArray(testCaseInput.prices)) {
-            const size = testCaseInput.prices.length;
-            const elements = testCaseInput.prices.join(' ');
-            return `${size}\n${elements}\n`;
+        if (typeof testCaseInput === 'object' && testCaseInput !== null) {
+            // Handle JSON objects by extracting values and formatting them
+            const values = Object.values(testCaseInput);
+            
+            // For a single value like {"x": 123}, return just the value
+            if (values.length === 1) {
+                // Ensure the value is converted to a string with a newline for standard input
+                return `${values[0]}\n`;
+            }
+            
+            // For multiple values in an object, join them with newlines
+            // This is a common format for problems with multiple parameters
+            // e.g., {"arr": [1, 2, 3], "target": 4}
+            const formattedValues = values.map(value => {
+                if (Array.isArray(value)) {
+                    // If a value is an array, format it for Judge0
+                    // Common format: size\nelements separated by spaces
+                    return `${value.length}\n${value.join(' ')}`;
+                }
+                return String(value);
+            });
+
+            return formattedValues.join('\n') + '\n';
         }
 
-        // Handle array 'nums' for other problems if needed
-        if (Array.isArray(testCaseInput.nums)) {
-            const size = testCaseInput.nums.length;
-            const elements = testCaseInput.nums.join(' ');
-            return `${size}\n${elements}\n`;
+        // If the input is an array, format it appropriately
+        if (Array.isArray(testCaseInput)) {
+            const formattedArray = testCaseInput.map(item => {
+                if (Array.isArray(item)) {
+                    return item.join(' ');
+                }
+                return String(item);
+            }).join('\n');
+            return formattedArray + '\n';
         }
-        
-        // Handle a single integer input, like n
-        if (typeof testCaseInput.n === 'number') {
-            return `${testCaseInput.n}\n`;
-        }
-
-        // Add more specific parsing logic here if needed
-        throw new Error(`Unsupported C++ test case input format: ${JSON.stringify(testCaseInput)}.`);
     }
 
-    // For other languages (like JS/Python/Java with wrappers),
-    // they still expect JSON stringified inputs.
+    // For other languages that use a wrapper and expect JSON strings (like Python or JS)
     return JSON.stringify(testCaseInput);
 };
-
 
 /**
  * Helper function to format expected output for C++ Codeforces-style problems.

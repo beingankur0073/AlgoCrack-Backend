@@ -1,10 +1,10 @@
-// src/controllers/question.controller.js
+
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiErrors.js";
 import { Question } from "../models/question.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
-// @route   POST /api/v1/questions/
+// @route   POST /api/v1/questions/add
 // @desc    Admin creates a new question
 // @access  Private (Admin)
 const createQuestion = asyncHandler(async (req, res) => {
@@ -87,4 +87,23 @@ const submitQuiz = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, { score, totalQuestions: questions.length }, "Quiz submitted and scored successfully."));
 });
 
-export { createQuestion, getQuestionsByTopic, submitQuiz };
+
+const getAllQuestions = asyncHandler(async (req, res) => {
+    // We fetch all questions without any filters
+    const questions = await Question.find({});
+
+    if (!questions || questions.length === 0) {
+        throw new ApiError(404, "No questions found in the database.");
+    }
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, questions, "All questions fetched successfully."));
+});
+
+export { 
+         createQuestion,
+         getQuestionsByTopic,
+         submitQuiz,
+         getAllQuestions 
+    };
