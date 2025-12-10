@@ -5,19 +5,42 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import Submission from '../models/submission.models.js'; 
 
 const getAllProblems = asyncHandler(async (req, res) => {
-    const problems = await Problem.find().select('_id title difficulty');
+    // 1. Get page and limit from query parameters (set defaults if missing)
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    // 2. Calculate how many items to skip
+    const skip = (page - 1) * limit;
 
-    if (!problems || problems.length === 0) {
+    // 3. Fetch the problems (paginated) AND the total count in parallel
+    // We need 'totalProblems' so the frontend knows when to disable the "Next" button
+    const [problems, totalProblems] = await Promise.all([
+        Problem.find()
+            .select('_id title difficulty') // Optimize: only get fields we need
+            .skip(skip)
+            .limit(limit),
+        Problem.countDocuments()
+    ]);
+
+    // 4. Handle case where database is empty
+    if (!problems && totalProblems === 0) {
         throw new ApiError(404, "No problems found.");
     }
-    
 
-   
+    // 5. Send back data structure matching your Redux slice
     return res.status(200).json(
-        new ApiResponse(200, problems, "Problems fetched successfully")
+        new ApiResponse(
+            200,
+            {
+                problems,      // The array of 10 problems
+                totalProblems, // The total number of problems in DB (e.g., 50)
+                page,          // Current page (e.g., 1)
+                limit          // Limit used (e.g., 10)
+            },
+            "Problems fetched successfully"
+        )
     );
 });
-
 
 
 

@@ -424,14 +424,22 @@ const getSubmissionDetails = asyncHandler(async (req, res) => {
 const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
 
-    // if (!userId) {
-    //     throw new ApiError(401, "User not authenticated.");
-    // }
+    // --- 1. Pagination Setup ---
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    // --- Start: Fetch Submissions Logic (Existing) ---
-    const submissions = await Submission.find({ userId: userId })
-        .sort({ submittedAt: -1 })
-        .populate('problemId', 'title difficulty');
+    // --- 2. Fetch Paginated Submissions & Total Count ---
+    // We use Promise.all to fetch the data and the total count in parallel
+    const [submissions, totalSubmissions] = await Promise.all([
+        Submission.find({ userId: userId })
+            .sort({ submittedAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate('problemId', 'title difficulty'),
+        
+        Submission.countDocuments({ userId: userId })
+    ]);
 
     const formattedSubmissions = submissions.map(sub => ({
         _id: sub._id,
@@ -445,12 +453,13 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
     }));
     // --- End: Fetch Submissions Logic ---
 
-    // --- Start: Fetch Problem Stats Logic (Existing) ---
+    // --- 3. Fetch Problem Stats Logic (Existing - Unpaginated) ---
+    // Note: Stats usually need to calculate based on *all* history, not just the current page.
     const totalProblems = await Problem.countDocuments();
 
     const solvedProblemIds = await Submission.distinct('problemId', {
         userId: userId,
-        status: 'Accepted' // Assuming 'Accepted' is the status for a successful solution
+        status: 'Accepted'
     });
     const solvedProblemsCount = solvedProblemIds.length;
 
@@ -459,13 +468,13 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
     const problemStats = {
         totalProblems,
         solvedProblems: solvedProblemsCount,
-        solvedPercentage: solvedPercentage.toFixed(2) // Format to 2 decimal places
+        solvedPercentage: solvedPercentage.toFixed(2)
     };
     // --- End: Fetch Problem Stats Logic ---
 
-    // --- Start: Fetch Submission Map (Activity) Logic (NEW) ---
+    // --- 4. Fetch Submission Map (Activity) Logic (Existing - Time-based) ---
+    // Note: Heatmaps need data for the full time range (last year), not paginated data.
     const now = new Date();
-    // Default to last 365 days for the activity map
     const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
 
     const submissionMapActivity = await Submission.aggregate([
@@ -474,9 +483,9 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
                 userId: userId,
                 submittedAt: {
                     $gte: oneYearAgo,
-                    $lte: now // Ensure we're within the last year up to now
+                    $lte: now 
                 },
-                status: { $ne: 'Pending' } // Exclude pending submissions from activity count
+                status: { $ne: 'Pending' }
             }
         },
         {
@@ -487,9 +496,7 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
                 count: { $sum: 1 }
             }
         },
-        {
-            $sort: { _id: 1 } // Sort by date ascending
-        },
+        { $sort: { _id: 1 } },
         {
             $project: {
                 _id: 0,
@@ -498,9 +505,9 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
             }
         }
     ]);
-    // --- End: Fetch Submission Map (Activity) Logic ---
+    // --- End: Fetch Submission Map Logic ---
 
-    // Combine all data into a single response object
+    // --- 5. Construct Response ---
     return res
         .status(200)
         .json(
@@ -508,10 +515,16 @@ const getLatestSubmissionsForUser = asyncHandler(async (req, res) => {
                 200,
                 {
                     submissions: formattedSubmissions,
+                    pagination: {
+                        totalSubmissions,       // Total items in DB
+                        totalPages: Math.ceil(totalSubmissions / limit), // Total pages
+                        currentPage: page,      // Current page number
+                        limit: limit            // Items per page
+                    },
                     problemStats: problemStats,
-                    submissionMapActivity: submissionMapActivity // <--- NEW: Include submission map data
+                    submissionMapActivity: submissionMapActivity
                 },
-                "User profile data (submissions, problem stats, activity map) fetched successfully."
+                "User profile data fetched successfully."
             )
         );
 });
