@@ -12,7 +12,7 @@ const app = express();
 
 // --- Middleware Setup ---
 app.use(cors({
-    origin: process.env.CORS_ORIGIN, // e.g., http://localhost:3000
+    origin: [process.env.CORS_ORIGIN, process.env.CORS_ORIGIN_TEST], // e.g., http://localhost:3000
     credentials: true,
 }));
 
