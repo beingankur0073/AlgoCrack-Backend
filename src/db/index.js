@@ -17,8 +17,8 @@ const connectDB=async()=>{
 
     const connectionInstance=await mongoose.connect(`${process.env.MONGODB_URI}/${DB_NAME}`);
     console.log(`\n MongoDB connected !! DB HOST: ${connectionInstance.connection.host}`)
-    // await Problem.insertMany(Problems);
-   // console.log(`🎉 Successfully imported ${Problems.length} problems!`)
+//    await Problem.insertMany(Problems);
+//   console.log(`🎉 Successfully imported ${Problems.length} problems!`)
     }
     catch(error){
         console.log("MONGODB connection failure",error);
